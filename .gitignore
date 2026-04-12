@@ -1,48 +1,104 @@
-# Miscellaneous
-*.class
+# =========================
+# SISTEMA / GENERAL
+# =========================
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
 *.log
+*.class
 *.pyc
 *.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# =========================
+# EDITORES / IDE
+# =========================
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# =========================
+# FLUTTER / DART / PUB
+# =========================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
 **/doc/api/
 **/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
 
-# Symbolication related
+# =========================
+# FLUTTER BUILD ARTIFACTS
+# =========================
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-node_modules/
 render_web/.last_build_id
+
+# =========================
+# ANDROID / IOS / DESKTOP
+# =========================
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.last_build_id
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+
+# =========================
+# NODE / BASURA ACCIDENTAL
+# =========================
+node_modules/
+package-lock.json
+package.json
+npm
+npx
+taskkill
+mkdir
+cd
+curl
+dir
+netstat
+container
+flutter
+
+# =========================
+# ARCHIVOS VACÍOS O RAROS
+# =========================
+AppConfig.apiBaseUrl
+p.active).toList()
+p.activo).toList()
+Product.fromJson(e)).toList()
+_currentUser
+_metodoPagoSeleccionado
+_savingPassword
+_savingProfile
+_savingSecurity
+_showProductDialog(context)
+_token
+
+# =========================
+# LOGS / CAPTURAS LOCALES
+# =========================
+flutter_01.log
+flutter_02.log
+flutter_03.log
+flutter_04.log
+flutter_05.log
+flutter_06.log
+flutter_07.log
+flutter_01.png
+
+# =========================
+# QODO / HERRAMIENTAS
+# =========================
+.qodo/
