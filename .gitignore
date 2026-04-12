@@ -102,3 +102,6 @@ flutter_01.png
 # QODO / HERRAMIENTAS
 # =========================
 .qodo/
+
+android/build/
+android/**/build/
