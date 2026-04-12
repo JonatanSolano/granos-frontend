@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Plataforma e-commerce Granos La Tradición">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Granos La Tradición">
+
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>Granos La Tradición</title>
+
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=AWlFemv08pZV_gBEOFzRXRMubkpmxKAajcvgFumXp3HIlEt2_mRrPvUgFGZMq3Xf8DnhgMxgE6hMhGRJ&currency=USD&intent=capture&components=buttons&disable-funding=credit,card"
+    data-sdk-integration-source="button-factory">
+  </script>
+
+  <script>
+    window.renderFlutterPayPalButtons = function (config) {
+      try {
+        if (!window.paypal) {
+          window.postMessage({
+            source: "paypal_flutter",
+            type: "error",
+            message: "No se cargó el SDK de PayPal."
+          }, "*");
+          return;
+        }
+
+        const container = document.getElementById(config.containerId);
+
+        if (!container) {
+          window.postMessage({
+            source: "paypal_flutter",
+            type: "error",
+            message: "No se encontró el contenedor de PayPal."
+          }, "*");
+          return;
+        }
+
+        container.innerHTML = "";
+        container.style.width = "100%";
+        container.style.minHeight = "140px";
+        container.style.overflow = "visible";
+
+        const buttons = window.paypal.Buttons({
+          fundingSource: window.paypal.FUNDING.PAYPAL,
+
+          style: {
+            layout: "vertical",
+            shape: "rect",
+            label: "paypal",
+            height: 45,
+            tagline: false
+          },
+
+          onInit: function () {
+            window.postMessage({
+              source: "paypal_flutter",
+              type: "ready",
+              message: "Botones PayPal listos."
+            }, "*");
+          },
+
+          createOrder: async function () {
+            try {
+              window.postMessage({
+                source: "paypal_flutter",
+                type: "processing",
+                message: "Creando orden PayPal..."
+              }, "*");
+
+              const response = await fetch(config.createOrderUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + config.token
+                },
+                body: JSON.stringify({
+                  orderId: config.orderId
+                })
+              });
+
+              let data = {};
+              try {
+                data = await response.json();
+              } catch (_) {
+                data = {};
+              }
+
+              if (!response.ok || !data.ok || !data.paypalOrderId) {
+                const msg =
+                  data.detail ||
+                  data.mensaje ||
+                  data.message ||
+                  data.error ||
+                  "No se pudo crear la orden PayPal";
+
+                window.postMessage({
+                  source: "paypal_flutter",
+                  type: "error",
+                  message: msg
+                }, "*");
+
+                throw new Error(msg);
+              }
+
+              return data.paypalOrderId;
+            } catch (error) {
+              const msg = error?.message || "Error creando la orden PayPal";
+
+              window.postMessage({
+                source: "paypal_flutter",
+                type: "error",
+                message: msg
+              }, "*");
+
+              throw error;
+            }
+          },
+
+          onApprove: async function (data) {
+            try {
+              window.postMessage({
+                source: "paypal_flutter",
+                type: "processing",
+                message: "Capturando pago PayPal..."
+              }, "*");
+
+              const response = await fetch(config.captureOrderUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + config.token
+                },
+                body: JSON.stringify({
+                  orderId: config.orderId,
+                  paypalOrderId: data.orderID
+                })
+              });
+
+              let result = {};
+              try {
+                result = await response.json();
+              } catch (_) {
+                result = {};
+              }
+
+              if (!response.ok || !result.ok) {
+                const msg =
+                  result.detail ||
+                  result.mensaje ||
+                  result.message ||
+                  result.error ||
+                  "No se pudo capturar el pago PayPal";
+
+                window.postMessage({
+                  source: "paypal_flutter",
+                  type: "error",
+                  message: msg
+                }, "*");
+
+                throw new Error(msg);
+              }
+
+              window.postMessage({
+                source: "paypal_flutter",
+                type: "success",
+                message: result.mensaje || "Pago PayPal aprobado",
+                orderId: config.orderId
+              }, "*");
+            } catch (error) {
+              window.postMessage({
+                source: "paypal_flutter",
+                type: "error",
+                message: error?.message || "Error capturando el pago PayPal"
+              }, "*");
+            }
+          },
+
+          onCancel: function () {
+            window.postMessage({
+              source: "paypal_flutter",
+              type: "cancel",
+              message: "Pago PayPal cancelado por el usuario."
+            }, "*");
+          },
+
+          onError: function (err) {
+            window.postMessage({
+              source: "paypal_flutter",
+              type: "error",
+              message: err?.message || "Error al procesar PayPal."
+            }, "*");
+          }
+        });
+
+        if (!buttons) {
+          window.postMessage({
+            source: "paypal_flutter",
+            type: "error",
+            message: "No se pudieron inicializar los botones de PayPal."
+          }, "*");
+          return;
+        }
+
+        buttons.render("#" + config.containerId).catch(function (err) {
+          window.postMessage({
+            source: "paypal_flutter",
+            type: "error",
+            message: err?.message || "No se pudieron renderizar los botones de PayPal."
+          }, "*");
+        });
+      } catch (error) {
+        window.postMessage({
+          source: "paypal_flutter",
+          type: "error",
+          message: error?.message || "Error general al renderizar PayPal"
+        }, "*");
+      }
+    };
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
