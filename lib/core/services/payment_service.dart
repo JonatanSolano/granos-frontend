@@ -3,14 +3,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/app_config.dart';
 import '../models/payment_response_model.dart';
 
 class PaymentService {
   PaymentService();
 
-  // Cambia esta URL si pruebas desde emulador Android físico o dispositivo real.
-  // Web / desktop local:
-  final String baseUrl = "http://127.0.0.1:4000/api";
+  final String baseUrl = "${AppConfig.apiBaseUrl}/api";
 
   Future<PaymentResponseModel> processPayment({
     required int orderId,
@@ -23,7 +22,6 @@ class PaymentService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final token = prefs.getString('token');
 
       if (token == null || token.isEmpty) {

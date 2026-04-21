@@ -44,6 +44,30 @@ class PaymentProvider extends ChangeNotifier {
     return prefs.getString('token');
   }
 
+  bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) {
+      final v = value.toLowerCase().trim();
+      return v == "true" || v == "1" || v == "activa" || v == "activo";
+    }
+    return false;
+  }
+
+  Map<String, dynamic> _normalizeTarjeta(Map<String, dynamic> row) {
+    return {
+      ...row,
+      "activo": _toBool(row["activo"]),
+    };
+  }
+
+  Map<String, dynamic> _normalizeSinpe(Map<String, dynamic> row) {
+    return {
+      ...row,
+      "activo": _toBool(row["activo"]),
+    };
+  }
+
   void clearState() {
     _isLoading = false;
     _errorMessage = null;
@@ -69,52 +93,64 @@ class PaymentProvider extends ChangeNotifier {
         return;
       }
 
-      final response = await http.get(
-        Uri.parse("$baseUrl/payments/test-data"),
+      final tarjetasResponse = await http.get(
+        Uri.parse("$baseUrl/bank/test-cards"),
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",
         },
       );
 
-      final decoded = jsonDecode(response.body);
+      final sinpeResponse = await http.get(
+        Uri.parse("$baseUrl/bank/test-sinpe"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
 
-      if (response.statusCode == 200 &&
-          decoded is Map<String, dynamic> &&
-          decoded["ok"] == true &&
-          decoded["data"] is Map<String, dynamic>) {
-        final data = decoded["data"] as Map<String, dynamic>;
+      final tarjetasDecoded = _safeDecode(tarjetasResponse.body);
+      final sinpeDecoded = _safeDecode(sinpeResponse.body);
 
-        final tarjetas = data["tarjetas"];
-        final sinpe = data["sinpe"];
-
-        _tarjetasPrueba = tarjetas is List
-            ? tarjetas
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .toList()
-            : [];
-
-        _sinpePrueba = sinpe is List
-            ? sinpe
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .toList()
-            : [];
-
-        _testDataError = null;
+      if (tarjetasResponse.statusCode == 200 &&
+          tarjetasDecoded["ok"] == true &&
+          tarjetasDecoded["tarjetas"] is List) {
+        _tarjetasPrueba = (tarjetasDecoded["tarjetas"] as List)
+            .map((e) => _normalizeTarjeta(Map<String, dynamic>.from(e as Map)))
+            .toList();
       } else {
         _tarjetasPrueba = [];
+      }
+
+      if (sinpeResponse.statusCode == 200 &&
+          sinpeDecoded["ok"] == true &&
+          sinpeDecoded["cuentas"] is List) {
+        _sinpePrueba = (sinpeDecoded["cuentas"] as List)
+            .map((e) => _normalizeSinpe(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } else {
         _sinpePrueba = [];
-        _testDataError = decoded is Map<String, dynamic>
-            ? (decoded["mensaje"] ??
-                decoded["message"] ??
-                decoded["error"] ??
-                "No se pudieron cargar los datos de prueba.")
-            : "No se pudieron cargar los datos de prueba.";
+      }
+
+      if (_tarjetasPrueba.isEmpty && _sinpePrueba.isEmpty) {
+        final tarjetasError = tarjetasDecoded["mensaje"] ??
+            tarjetasDecoded["message"] ??
+            tarjetasDecoded["error"];
+
+        final sinpeError = sinpeDecoded["mensaje"] ??
+            sinpeDecoded["message"] ??
+            sinpeDecoded["error"];
+
+        _testDataError = tarjetasError?.toString() ??
+            sinpeError?.toString() ??
+            "No se pudieron cargar los datos de prueba.";
+      } else {
+        _testDataError = null;
       }
     } catch (e) {
       _tarjetasPrueba = [];
       _sinpePrueba = [];
-      _testDataError = "Error cargando datos de prueba: $e";
+      _testDataError = "Error obteniendo datos de prueba de pago.";
     } finally {
       _loadingTestData = false;
       notifyListeners();
@@ -200,6 +236,20 @@ class PaymentProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Map<String, dynamic> _safeDecode(String body) {
+    if (body.trim().isEmpty) return <String, dynamic>{};
+
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return <String, dynamic>{'message': decoded.toString()};
+    } catch (_) {
+      return <String, dynamic>{'message': body};
     }
   }
 }
